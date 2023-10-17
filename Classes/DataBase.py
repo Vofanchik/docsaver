@@ -55,13 +55,12 @@ class DataBase:
         self.conn.commit()
 
     def insert_document(self, name, number, release_date, structure_id,
-                        secret, annotation, category_id, favorite=False, is_current=True,
-                        date_of_insert = datetime.datetime.now().strftime('%Y-%m-%d')):
+                        secret, annotation, category_id, favorite, is_current):
         try:
             self.cur.execute("INSERT INTO documents(name, number, release_date, structure_id, date_of_insert,"
                              " secret, annotation, favorite, is_current, category_id) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                             (name, number, release_date, structure_id, date_of_insert, secret,
-                              annotation, favorite, is_current, category_id))
+                             (name, number, release_date, structure_id, datetime.datetime.now().strftime('%Y-%m-%d'),
+                              secret, annotation, favorite, is_current, category_id))
             self.conn.commit()
             return self.cur.lastrowid
 
@@ -110,8 +109,27 @@ class DataBase:
     def show_categories(self):
         return self.cur.execute('''SELECT * FROM categories''').fetchall()
 
+    def show_all_coincidence(self, kwargs):
+        return self.cur.execute('''        
+         SELECT documents.id, structures.name, documents.name, documents.number, 
+        documents.release_date, documents.secret, documents.favorite, documents.is_current
+         FROM documents lEFT JOIN structures ON documents.structure_id = structures.id 
+        where documents.name like ? and
+        documents.release_date BETWEEN ? and ? and
+        documents.number like ? and
+        documents.secret like ? and
+        documents.category_id like ? and
+        documents.structure_id like ? and
+        documents.is_current = ?
+        ''', ('%'+kwargs['name']+'%', kwargs['release_date_from'], kwargs['release_date_to'], '%'+kwargs['number']+'%',
+              '%'+str(kwargs['secret'])+'%', '%'+str(kwargs['category_id'])+'%', '%'+str(kwargs['structure_id'])+'%',
+              kwargs['is_current'])
+                                ).fetchall()
+
+
     def show_id_name_all_documents(self):
-        return self.cur.execute('''SELECT id, name FROM documents''').fetchall()
+        return self.cur.execute('''
+        SELECT id, name FROM documents''').fetchall()
 
     def show_favorites(self):
         return self.cur.execute('''SELECT * FROM documents where favorite = 1''').fetchall()
@@ -121,6 +139,12 @@ class DataBase:
         documents.release_date, documents.secret, documents.favorite, documents.is_current
          FROM documents lEFT JOIN structures ON documents.structure_id = structures.id
          where documents.id = ?''', (id_document,)).fetchone()
+
+    def show_last_ten_documents(self):
+        return self.cur.execute('''SELECT documents.id, structures.name, documents.name, documents.number, 
+        documents.release_date, documents.secret, documents.favorite, documents.is_current
+        FROM documents lEFT JOIN structures ON documents.structure_id = structures.id
+        ORDER BY documents.id DESC LIMIT 0,10''').fetchall()
 
     @staticmethod
     def convert_to_binary_data(filename):
@@ -148,13 +172,28 @@ class DataBase:
             save_path = os.path.join(destination, f_name + f_format)
             self.write_to_file(f_blob, save_path)
 
+    def delete_document_and_linked_files(self, document_id):
+        self.cur.execute('''DELETE from documents where id = ?''', (document_id,))
+        self.cur.execute('''DELETE from files where id_documents = ?''', (document_id,))
+        self.conn.commit()
+
+    def add_to_favorites(self, document_id):
+        self.cur.execute('''UPDATE documents SET favorite = 1 WHERE id = ?''', (document_id,))
+        self.conn.commit()
+
+    def delete_from_favorites(self, document_id):
+        self.cur.execute('''UPDATE documents SET favorite = 0 WHERE id = ?''', (document_id,))
+        self.conn.commit()
 
 
 if __name__ == "__main__":
     a = DataBase()
     # a.insert_document("Об охране здоровья граждан", "2016-07-23", 1, datetime.datetime.now().strftime('%Y-%m-%d')
     #                   3, "Зло", False, True)
-    # a.insert_file(1, '../323fz.pdf')
-    # a.save_data(1, './')
+    # a.insert_file(1, 'C:\Users\vofan\OneDrive\Рабочий стол')
+    # a.save_data(1, r'C:\Users\vofan\OneDrive\Рабочий стол')
     # a.insert_structure('gg')
-    print a.show_document_by_id(2)
+    # print a.show_document_by_id(2)
+    b = {'name': u'', 'release_date_from': '1980-01-01', 'number': u'', 'secret': '',
+                            'is_current': True, 'release_date_to': '2023-10-16', 'category_id': '2', 'structure_id': ''}
+    print a.show_all_coincidence(b)
