@@ -6,7 +6,7 @@ sys.setdefaultencoding('utf8')
 
 from PyQt4.QtGui import QMainWindow, QDialog, QGridLayout, QLineEdit, QDialogButtonBox, QFileDialog, \
     QTableWidgetItem, QCompleter, QWidget, QAction
-from PyQt4 import QtCore
+from PyQt4 import QtCore, QtGui
 from PyQt4.QtCore import QDate, QTimer, Qt, QDir
 from Classes.DataBase import DataBase
 from UI_files.MainWindow import Ui_MainWindow
@@ -20,6 +20,7 @@ def get_keys_from_value(d, val):
 class AddSearchDialog(QDialog):
     def __init__(self, parent=None):
         super(AddSearchDialog, self).__init__(parent)
+        self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap('Ui_files/thumbnail.png')))
         self.ui = Ui_Form_search_dialog()
         self.ui.setupUi(self)
         self.ui.pushButton_finish_add_document.clicked.connect(lambda: self.accept())
@@ -27,6 +28,7 @@ class AddSearchDialog(QDialog):
 class AddDocumentDialog(QDialog):
     def __init__(self, parent=None):
         super(AddDocumentDialog, self).__init__(parent)
+        self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap('Ui_files/thumbnail.png')))
         self.ui = Ui_Form()
         self.ui.setupUi(self)
         self.ui.pushButton_finish_add_document.clicked.connect(lambda: self.accept())
@@ -284,6 +286,7 @@ class MainWindow(QMainWindow):
             if added_id and len(self.path_to_file_list) > 0:
                 for i in self.path_to_file_list:
                     self.db.insert_file(added_id, i)
+                    self.path_to_file_list = []
 
     def run_search_dialog(self):
         run_search_dialog = AddSearchDialog()
